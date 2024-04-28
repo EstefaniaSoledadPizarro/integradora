@@ -1,64 +1,61 @@
 const socket = io();
 
-socket.emit("mensaje", "Mensaje recibido desde el cliente");
+function $(selector) {
+  return document.querySelector(selector);
+}
 
-getProducts();
+function addProductToCart(pid) {
+  console.log(`Product with ID ${pid} added to cart`);
+}
 
-socket.on("receiveProducts", (products) => {
-  renderProducts(products);
+socket.on("statusError", (data) => {
+  console.log(data);
+  alert(data);
 });
 
-function addProduct() {
-  const formData = new FormData();
-  formData.append("title", document.getElementById("title").value);
-  formData.append("description", document.getElementById("description").value);
-  formData.append("price", document.getElementById("price").value);
-  formData.append("code", document.getElementById("code").value);
-  formData.append("stock", document.getElementById("stock").value);
-  formData.append("category", document.getElementById("category").value);
-  formData.append("thumbnails", document.getElementById("thumbnails").files[0]);
+socket.on("publishProducts", (data) => {
+  $(".products-box").innerHTML = "";
 
-  socket.emit("addProduct", formData);
-
-  document.getElementById("title").value = "";
-  document.getElementById("description").value = "";
-  document.getElementById("price").value = "";
-  document.getElementById("thumbnails").value = "";
-  document.getElementById("code").value = "";
-  document.getElementById("stock").value = "";
-  document.getElementById("category").value = "";
-}
-
-function deleteProduct(productId) {
-  socket.emit("deleteProduct", +productId);
-  getProducts();
-}
-
-function getProducts() {
-  socket.emit("getProducts");
-}
-
-function renderProducts(products) {
-  const productsContainer = document.getElementById("products-container");
-  let productCardsHTML = "";
-
-  products.forEach((product) => {
-    productCardsHTML += `
-    <div class="product-card">
-      <img class="product-thumbnail" src="${product.thumbnails}" alt="Product Thumbnail">
-      <div class="product-details">
-        <p class="product-title">${product.title}</p>
-        <p class="product-description">${product.description}</p>
-        <p class="product-price">$${product.price}</p>
-        <p class="product-stock">Stock: ${product.stock}</p>
-        <p class="product-code">Code: ${product.code}</p>
-      </div>
-      <div class="product-actions">
-        <button class="delete-button" onclick="deleteProduct(${product.id})">Delete</button>
-      </div>
-    </div>
-    `;
+  let html = "";
+  data.forEach((product) => {
+    html += `<div class="product-card">
+                    <h3>${product.title}</h3>
+                    <hr>
+                    <p>Categoria: ${product.category}</p>
+                    <p>Descripción: ${product.description}</p>
+                    <p>Precio: $ ${product.price}</p>
+                    <button id="button-delete" onclick="deleteProduct('${product._id}')">Eliminar</button>
+                </div>`;
   });
 
-  productsContainer.innerHTML = productCardsHTML;
+  $(".products-box").innerHTML = html;
+});
+
+function createProduct(event) {
+  event.preventDefault();
+  const newProduct = {
+    title: $("#title").value,
+    description: $("#description").value,
+    code: $("#code").value,
+    price: $("#price").value,
+    stock: $("#stock").value,
+    category: $("#category").value,
+  };
+
+  cleanForm();
+
+  socket.emit("createProduct", newProduct);
+}
+
+function deleteProduct(pid) {
+  socket.emit("deleteProduct", { pid });
+}
+
+function cleanForm() {
+  $("#title").value = "";
+  $("#description").value = "";
+  $("#code").value = "";
+  $("#price").value = "";
+  $("#stock").value = "";
+  $("#category").value = "";
 }
